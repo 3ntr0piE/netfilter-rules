@@ -83,7 +83,7 @@ start)
         	i=0;
         	while (( $i < $nport )) ; do
                 	$IPT -t filter -A INPUT -i $int_t -p TCP --dport $1 -j ACCEPT
-               	shift
+			shift
         		i=$[$i+1]
         	done
         done
@@ -100,7 +100,7 @@ start)
         	i=0;
         	while (( $i < $nport )) ; do
                 	$IPT -t filter -A INPUT -i $int_u -p UDP --dport $1 -j ACCEPT
-               	shift
+			shift
                 	i=$[$i+1]
             	done
         done

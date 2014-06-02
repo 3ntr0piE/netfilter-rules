@@ -14,7 +14,7 @@ IPT_CONF_DIR="/etc/netfilter-rules.d"
 source_conf_file()
 {
         [ ! -f $IPT_CONF ] && {
-        	echo "$IPT_CONF missing" 1>&2
+		echo "${IPT_CONF} missing" 1>&2
         	exit 1
         }
         source $IPT_CONF
@@ -23,7 +23,7 @@ source_conf_file()
 run_extra_cmds()
 {
         [ ! -d $IPT_CONF_DIR ] && {
-        	echo "$IPT_CONF_DIR directory missing" 1>&2
+		echo "${IPT_CONF_DIR} directory missing" 1>&2
         	exit 1
         }
 	EXTRA_CMDS="$(find ${IPT_CONF_DIR} -type f -name '*.rule')"

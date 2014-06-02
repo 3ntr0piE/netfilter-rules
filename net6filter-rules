@@ -4,13 +4,14 @@
 # Modifié par Jerome Descoux le 20091105 (v3)
 # Modifié par Stephane Malinet le 20091106 (v3.1)
 # Modifié par Stephane Malinet le 20140531 (v3.2)
+# Modifié par Stephane Malinet le 20140602 (v3.2.1)
 # necessite un fichier /etc/netfilter-rules.conf et un repertoire /etc/netfilter-rules.d
 
 IPT="/sbin/ip6tables"
 IPT_CONF="/etc/net6filter-rules.conf"
 IPT_CONF_DIR="/etc/net6filter-rules.d"
 
-source_conf()
+source_conf_file()
 {
         [ ! -f $IPT_CONF ] && {
         	echo "$IPT_CONF missing" 1>&2
@@ -19,13 +20,13 @@ source_conf()
         source $IPT_CONF
 }
 
-extra_cmds()
+run_extra_cmds()
 {
         [ ! -d $IPT_CONF_DIR ] && {
         	echo "$IPT_CONF_DIR directory missing" 1>&2
         	exit 1
         }
-	EXTRA_CMDS="$(find ${IPT_CONF_DIR} -type f -name '*.conf')"
+	EXTRA_CMDS="$(find ${IPT_CONF_DIR} -type f -name '*.rule')"
 	for extra_cmd in $EXTRA_CMDS ; do
 		. $extra_cmd
 	done
@@ -47,11 +48,11 @@ flush()
 	$IPT -N LOGDROP
 }
 
-case "$1" in
+case "${1}" in
 start)
         flush
-	source_conf
-	extra_cmds
+	source_conf_file
+	run_extra_cmds
 
         $IPT -t filter -A LOGDROP -j LOG --log-prefix "[DROP] " 
         $IPT -t filter -A LOGDROP -j REJECT

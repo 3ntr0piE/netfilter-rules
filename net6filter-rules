@@ -9,17 +9,18 @@
 # Updated by Stephane Malinet 20140602 (v3.2.1)
 # Updated by Stephane Malinet 20250330 (v3.3.0)
 # Updated by Stephane Malinet 20250330 (v3.3.1)
+# Updated by Stephane Malinet 20250330 (v3.3.2)
 
 IPT="$(command -v ip6tables)"
-NF6_CONF_="/etc/net6filter-rules.conf"
+NF6_CONF="/etc/net6filter-rules.conf"
 NF6_CONF_DIR="/etc/net6filter-rules.d"
 
 source_conf_file() {
-  [ ! -f "${NF6_CONF_}" ] && {
-    echo "${NF6_CONF_} missing" 1>&2
+  [ ! -f "${NF6_CONF}" ] && {
+    echo "${NF6_CONF} missing" 1>&2
     exit 1
   }
-  source "${NF6_CONF_}"
+  source "${NF6_CONF}"
 }
 
 run_extra_cmds() {

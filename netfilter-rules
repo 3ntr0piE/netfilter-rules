@@ -9,6 +9,7 @@
 # Updated by Stephane Malinet 20140602 (v3.2.1)
 # Updated by Stephane Malinet 20250330 (v3.3.0)
 # Updated by Stephane Malinet 20250330 (v3.3.1)
+# Updated by Stephane Malinet 20250330 (v3.3.2)
 
 IPT="$(command -v iptables)"
 NF_CONF="/etc/netfilter-rules.conf"

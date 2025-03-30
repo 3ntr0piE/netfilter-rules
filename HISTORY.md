@@ -1,7 +1,7 @@
 * Didier Rebeix 20050214 + Stephane Malinet 20060411 : Creation
 * Updated by Stephane Malinet 20060411 (2)
 * Updated by Stephane Malinet 20060701 (v2.1)
-* Updated by Jerome Descoux 20091105 (v3)
+* Updated by Jerome Descoux 20091105 (3.0)
 * Updated by Stephane Malinet 20091106 (v3.1)
 * Updated by Stephane Malinet 20140531 (v3.2)
 * Updated by Stephane Malinet 20140602 (v3.2.1)

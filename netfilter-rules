@@ -51,24 +51,20 @@ main() {
       ${IPT} -t filter -A LOGDROP -j LOG --log-prefix "[DROP] "
       ${IPT} -t filter -A LOGDROP -j REJECT
 
-      local int
       for int in ${ping} ; do
         ${IPT} -A INPUT -p ICMP -i ${int} -j ACCEPT
       done
 
-      local except
       for except in ${exceptions} ; do
         ${IPT} -t filter -A INPUT -s ${except} -j ACCEPT
       done
 
-      local int_all
       for int_all in ${all} ; do
         ${IPT} -t filter -A INPUT -i ${int_all} -j ACCEPT
       done
 
       OLDIFS=$IFS
 
-      local int_t tcpint
       for int_t in ${tcpint} ; do
         IFS="+"
         set -- ${int_t}
@@ -86,7 +82,6 @@ main() {
 
       IFS=$OLDIFS
 
-      local int_u udpint
       for int_u in ${udpint} ; do
         IFS="+"
         set -- ${int_u}
@@ -104,14 +99,14 @@ main() {
 
       ${IPT} -t filter -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-      [[ $gateway == "True" ]] && {
+      [[ ${gateway} == "True" ]] && {
         ${IPT} -t nat -A POSTROUTING -o ${extif} -j MASQUERADE
         ${IPT} -A FORWARD -i ${intif} -o ${extif} -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
         ${IPT} -A FORWARD -o ${intif} -i ${extif} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
         echo 1 > /proc/sys/net/ipv4/conf/all/forwarding
       }
 
-      [[ $logdrop == "True" ]] && {
+      [[ ${logdrop} == "True" ]] && {
         ${IPT} -t filter -A INPUT -j LOG --log-prefix "[DROP] "
       }
 

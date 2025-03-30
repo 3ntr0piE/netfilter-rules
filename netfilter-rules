@@ -1,16 +1,5 @@
 #!/usr/bin/env bash
 
-# Didier Rebeix 20050214 + Stephane Malinet 20060411 : Creation
-# Updated by Stephane Malinet 20060411 (2)
-# Updated by Stephane Malinet 20060701 (v2.1)
-# Updated by Jerome Descoux 20091105 (v3)
-# Updated by Stephane Malinet 20091106 (v3.1)
-# Updated by Stephane Malinet 20140531 (v3.2)
-# Updated by Stephane Malinet 20140602 (v3.2.1)
-# Updated by Stephane Malinet 20250330 (v3.3.0)
-# Updated by Stephane Malinet 20250330 (v3.3.1)
-# Updated by Stephane Malinet 20250330 (v3.3.2)
-
 IPT="$(command -v iptables)"
 NF_CONF="/etc/netfilter-rules.conf"
 NF_CONF_DIR="/etc/netfilter-rules.d"
@@ -52,99 +41,103 @@ flush() {
   ${IPT} -N LOGDROP
 }
 
-case "${1}" in
-  start)
-    flush
-    source_conf_file
-    run_extra_cmds
+main() {
+  case "${1}" in
+    start)
+      flush
+      source_conf_file
+      run_extra_cmds
 
-    ${IPT} -t filter -A LOGDROP -j LOG --log-prefix "[DROP] "
-    ${IPT} -t filter -A LOGDROP -j REJECT
+      ${IPT} -t filter -A LOGDROP -j LOG --log-prefix "[DROP] "
+      ${IPT} -t filter -A LOGDROP -j REJECT
 
-    local int
-    for int in ${ping} ; do
-      ${IPT} -A INPUT -p ICMP -i ${int} -j ACCEPT
-    done
-
-    local except
-    for except in ${exceptions} ; do
-      ${IPT} -t filter -A INPUT -s ${except} -j ACCEPT
-    done
-
-    local int_all
-    for int_all in ${all} ; do
-      ${IPT} -t filter -A INPUT -i ${int_all} -j ACCEPT
-    done
-
-    OLDIFS=$IFS
-
-    local int_t tcpint
-    for int_t in ${tcpint} ; do
-      IFS="+"
-      set -- ${int_t}
-
-      int_t=${1}
-      shift
-      nport=$#
-      i=0;
-      while (( ${i} < ${nport} )) ; do
-        ${IPT} -t filter -A INPUT -i ${int_t} -p TCP --dport ${1} -j ACCEPT
-        shift
-        i=$[$i+1]
+      local int
+      for int in ${ping} ; do
+        ${IPT} -A INPUT -p ICMP -i ${int} -j ACCEPT
       done
-    done
 
-    IFS=$OLDIFS
-
-    local int_u udpint
-    for int_u in ${udpint} ; do
-      IFS="+"
-      set -- ${int_u}
-
-      int_u=$1
-      shift
-      nport=$#
-      i=0;
-      while (( ${i} < ${nport} )) ; do
-        ${IPT} -t filter -A INPUT -i ${int_u} -p UDP --dport ${1} -j ACCEPT
-        shift
-        i=$[$i+1]
+      local except
+      for except in ${exceptions} ; do
+        ${IPT} -t filter -A INPUT -s ${except} -j ACCEPT
       done
-    done
 
-    ${IPT} -t filter -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+      local int_all
+      for int_all in ${all} ; do
+        ${IPT} -t filter -A INPUT -i ${int_all} -j ACCEPT
+      done
 
-    [[ $gateway == "True" ]] && {
-      ${IPT} -t nat -A POSTROUTING -o ${extif} -j MASQUERADE
-      ${IPT} -A FORWARD -i ${intif} -o ${extif} -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
-      ${IPT} -A FORWARD -o ${intif} -i ${extif} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-      echo 1 > /proc/sys/net/ipv4/conf/all/forwarding
-    }
+      OLDIFS=$IFS
 
-    [[ $logdrop == "True" ]] && {
-      ${IPT} -t filter -A INPUT -j LOG --log-prefix "[DROP] "
-    }
+      local int_t tcpint
+      for int_t in ${tcpint} ; do
+        IFS="+"
+        set -- ${int_t}
 
-    IFS=$OLDIFS
+        int_t=${1}
+        shift
+        nport=$#
+        i=0;
+        while (( ${i} < ${nport} )) ; do
+          ${IPT} -t filter -A INPUT -i ${int_t} -p TCP --dport ${1} -j ACCEPT
+          shift
+          i=$[$i+1]
+        done
+      done
 
-    # REJECT
-    ${IPT} -A INPUT -p tcp -j REJECT --reject-with tcp-reset # we prefer REJECT instead of DROP
-    ${IPT} -A INPUT -j REJECT # we prefer REJECT instead of DROP
-    # To avoid the network break
-    ${IPT} -P INPUT DROP
-    ${IPT} -P OUTPUT ACCEPT
-    ${IPT} -P FORWARD ACCEPT
-  ;;
+      IFS=$OLDIFS
 
-  stop)
-    flush
-  ;;
+      local int_u udpint
+      for int_u in ${udpint} ; do
+        IFS="+"
+        set -- ${int_u}
 
-  restart)
-    $0 start
-  ;;
+        int_u=$1
+        shift
+        nport=$#
+        i=0;
+        while (( ${i} < ${nport} )) ; do
+          ${IPT} -t filter -A INPUT -i ${int_u} -p UDP --dport ${1} -j ACCEPT
+          shift
+          i=$[$i+1]
+        done
+      done
 
-  *)
-    echo "Usage: $0 [start|restart|stop]"
-  ;;
-esac
+      ${IPT} -t filter -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+      [[ $gateway == "True" ]] && {
+        ${IPT} -t nat -A POSTROUTING -o ${extif} -j MASQUERADE
+        ${IPT} -A FORWARD -i ${intif} -o ${extif} -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+        ${IPT} -A FORWARD -o ${intif} -i ${extif} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+        echo 1 > /proc/sys/net/ipv4/conf/all/forwarding
+      }
+
+      [[ $logdrop == "True" ]] && {
+        ${IPT} -t filter -A INPUT -j LOG --log-prefix "[DROP] "
+      }
+
+      IFS=$OLDIFS
+
+      # REJECT
+      ${IPT} -A INPUT -p tcp -j REJECT --reject-with tcp-reset # we prefer REJECT instead of DROP
+      ${IPT} -A INPUT -j REJECT # we prefer REJECT instead of DROP
+      # To avoid the network break
+      ${IPT} -P INPUT DROP
+      ${IPT} -P OUTPUT ACCEPT
+      ${IPT} -P FORWARD ACCEPT
+    ;;
+
+    stop)
+      flush
+    ;;
+
+    restart)
+      $0 start
+    ;;
+
+    *)
+      echo "Usage: $0 [start|restart|stop]"
+    ;;
+  esac
+}
+
+main "${@}"

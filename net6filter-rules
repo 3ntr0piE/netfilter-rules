@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# Didier Rebeix 20050214 + Stephane Malinet 20060411 : script de gestion iptables simplifié
-# Modifié par Stephane Malinet le 20060411 (v2), 20060701 (v2.1)
-# Modifié par Jerome Descoux le 20091105 (v3)
-# Modifié par Stephane Malinet le 20091106 (v3.1)
-# Modifié par Stephane Malinet le 20140531 (v3.2)
-# Modifié par Stephane Malinet le 20140602 (v3.2.1)
-# necessite un fichier /etc/netfilter-rules.conf et un repertoire /etc/netfilter-rules.d
+
+# Didier Rebeix 20050214 + Stephane Malinet 20060411 : Creation
+# Updated by Stephane Malinet 20060411 (v2), 20060701 (v2.1)
+# Updated by Jerome Descoux 20091105 (v3)
+# Updated by Stephane Malinet 20091106 (v3.1)
+# Updated by Stephane Malinet 20140531 (v3.2)
+# Updated by Stephane Malinet 20140602 (v3.2.1)
+# Updated by Stephane Malinet 20250330 (v3.3.0)
 
 IPT="/sbin/ip6tables"
 IPT_CONF="/etc/net6filter-rules.conf"
@@ -54,7 +55,6 @@ case "${1}" in
     ${IPT} -t filter -A LOGDROP -j LOG --log-prefix "[DROP] "
     ${IPT} -t filter -A LOGDROP -j REJECT
 
-    # version 2.1
     for int in ${ping} ; do
       ${IPT} -A INPUT -p icmpv6 -i ${int} -j ACCEPT
     done
@@ -115,11 +115,10 @@ case "${1}" in
     IFS=$OLDIFS
 
     # REJECT
-    ${IPT} -A INPUT -p TCP -j REJECT --reject-with icmp6-adm-prohibited
+    ${IPT} -A INPUT -p TCP -j REJECT --reject-with icmp6-adm-prohibited # we prefer REJECT instead of DROP
     ${IPT} -A INPUT -p TCP -j REJECT --reject-with tcp-reset # we prefer REJECT instead of DROP
     ${IPT} -A INPUT -j REJECT # we prefer REJECT instead of DROP
-    # on fait tout ca à la fin pour eviter de bloquer le script(et le reseau)
-    # en cas d'affichage (ssh)
+    # To avoid the network break
     ${IPT} -P INPUT DROP
     ${IPT} -P OUTPUT ACCEPT
     ${IPT} -P FORWARD ACCEPT

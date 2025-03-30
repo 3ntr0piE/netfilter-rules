@@ -8,26 +8,27 @@
 # Updated by Stephane Malinet 20140531 (v3.2)
 # Updated by Stephane Malinet 20140602 (v3.2.1)
 # Updated by Stephane Malinet 20250330 (v3.3.0)
+# Updated by Stephane Malinet 20250330 (v3.3.1)
 
 IPT="$(command -v ip6tables)"
-IPT_CONF="/etc/net6filter-rules.conf"
-IPT_CONF_DIR="/etc/net6filter-rules.d"
+NF6_CONF_="/etc/net6filter-rules.conf"
+NF6_CONF_DIR="/etc/net6filter-rules.d"
 
 source_conf_file() {
-  [ ! -f "${IPT_CONF}" ] && {
-    echo "${IPT_CONF} missing" 1>&2
+  [ ! -f "${NF6_CONF_}" ] && {
+    echo "${NF6_CONF_} missing" 1>&2
     exit 1
   }
-  source "${IPT_CONF}"
+  source "${NF6_CONF_}"
 }
 
 run_extra_cmds() {
-  [ ! -d "${IPT_CONF_DIR}" ] && {
-    echo "${IPT_CONF_DIR} directory missing" 1>&2
+  [ ! -d "${NF6_CONF_DIR}" ] && {
+    echo "${NF6_CONF_DIR} directory missing" 1>&2
     exit 1
   }
   local extra_cmds extra_cmd
-  extra_cmds="$(find ${IPT_CONF_DIR} -type f -name '*.rule')"
+  extra_cmds="$(find ${NF6_CONF_DIR} -type f -name '*.rule')"
   for extra_cmd in ${extra_cmds} ; do
     . ${extra_cmd}
   done
@@ -57,20 +58,24 @@ case "${1}" in
     ${IPT} -t filter -A LOGDROP -j LOG --log-prefix "[DROP] "
     ${IPT} -t filter -A LOGDROP -j REJECT
 
+    local int
     for int in ${ping} ; do
       ${IPT} -A INPUT -p icmpv6 -i ${int} -j ACCEPT
     done
 
+    local except
     for except in ${exceptions} ; do
       ${IPT} -t filter -A INPUT -s ${except} -j ACCEPT
     done
 
+    local int_all
     for int_all in ${all} ; do
       ${IPT} -t filter -A INPUT -i ${int_all} -j ACCEPT
     done
 
     OLDIFS=$IFS
 
+    local int_t tcpint
     for int_t in ${tcpint} ; do
       IFS="+"
       set -- ${int_t}
@@ -88,9 +93,10 @@ case "${1}" in
 
     IFS=$OLDIFS
 
-    for int_u in $udpint ; do
+    local int_u udpint
+    for int_u in ${udpint} ; do
       IFS="+"
-      set -- $int_u
+      set -- ${int_u}
 
       int_u=$1
       shift

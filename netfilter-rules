@@ -1,5 +1,5 @@
-#!/bin/bash
-# Didier Rebeix 20050214 + Stephane Malinet 20060411 :  script de gestion iptables simplifié
+#!/usr/bin/env bash
+# Didier Rebeix 20050214 + Stephane Malinet 20060411 : script de gestion iptables simplifié
 # Modifié par Stephane Malinet le 20060411 (v2), 20060701 (v2.1)
 # Modifié par Jerome Descoux le 20091105 (v3)
 # Modifié par Stephane Malinet le 20091106 (v3.1)
@@ -11,136 +11,132 @@ IPT="/sbin/iptables"
 IPT_CONF="/etc/netfilter-rules.conf"
 IPT_CONF_DIR="/etc/netfilter-rules.d"
 
-source_conf_file()
-{
-        [ ! -f $IPT_CONF ] && {
-		echo "${IPT_CONF} missing" 1>&2
-        	exit 1
-        }
-        source $IPT_CONF
+source_conf_file() {
+  [ ! -f "${IPT_CONF}" ] && {
+    echo "${IPT_CONF} missing" 1>&2
+    exit 1
+  }
+  source "${IPT_CONF}"
 }
 
-run_extra_cmds()
-{
-        [ ! -d $IPT_CONF_DIR ] && {
-		echo "${IPT_CONF_DIR} directory missing" 1>&2
-        	exit 1
-        }
-	EXTRA_CMDS="$(find ${IPT_CONF_DIR} -type f -name '*.rule')"
-	for extra_cmd in $EXTRA_CMDS ; do
-		. $extra_cmd
-	done
+run_extra_cmds() {
+  [ ! -d ${IPT_CONF_DIR} ] && {
+    echo "${IPT_CONF_DIR} directory missing" 1>&2
+    exit 1
+  }
+  EXTRA_CMDS="$(find ${IPT_CONF_DIR} -type f -name '*.rule')"
+  for extra_cmd in ${EXTRA_CMDS} ; do
+    . ${extra_cmd}
+  done
 }
 
-flush()
-{
-	$IPT -P INPUT ACCEPT
-	$IPT -P OUTPUT ACCEPT
-	$IPT -P FORWARD ACCEPT
+flush() {
+  ${IPT} -P INPUT ACCEPT
+  ${IPT} -P OUTPUT ACCEPT
+  ${IPT} -P FORWARD ACCEPT
 
-	$IPT -F INPUT
-	$IPT -F OUTPUT
-	$IPT -F FORWARD
-	$IPT -F PREROUTING -t nat
-	$IPT -F PREROUTING -t mangle
-	$IPT -F POSTROUTING -t nat
-	$IPT -F POSTROUTING -t mangle
-	$IPT -F LOGDROP -t filter > /dev/null 2>&1
-	$IPT -X LOGDROP -t filter > /dev/null 2>&1
-	$IPT -N LOGDROP
+  ${IPT} -F INPUT
+  ${IPT} -F OUTPUT
+  ${IPT} -F FORWARD
+  ${IPT} -F PREROUTING -t nat
+  ${IPT} -F PREROUTING -t mangle
+  ${IPT} -F POSTROUTING -t nat
+  ${IPT} -F POSTROUTING -t mangle
+  ${IPT} -F LOGDROP -t filter > /dev/null 2>&1
+  ${IPT} -X LOGDROP -t filter > /dev/null 2>&1
+  ${IPT} -N LOGDROP
 }
 
-case "$1" in
-start)
-        flush
-	source_conf_file
-	run_extra_cmds
+case "${1}" in
+  start)
+    flush
+    source_conf_file
+    run_extra_cmds
 
-        $IPT -t filter -A LOGDROP -j LOG --log-prefix "[DROP] " 
-        $IPT -t filter -A LOGDROP -j REJECT
+    ${IPT} -t filter -A LOGDROP -j LOG --log-prefix "[DROP] "
+    ${IPT} -t filter -A LOGDROP -j REJECT
 
-        # version 2.1
-        for int in $ping ; do
-        	$IPT -A INPUT -p ICMP -i $int -j ACCEPT
-        done
+    # version 2.1
+    for int in ${ping} ; do
+      ${IPT} -A INPUT -p ICMP -i ${int} -j ACCEPT
+    done
 
-        for except in $exceptions ; do
-        	$IPT -t filter -A INPUT -s $except -j ACCEPT
-        done
+    for except in ${exceptions} ; do
+      ${IPT} -t filter -A INPUT -s ${except} -j ACCEPT
+    done
 
-        for int_all in $all ; do
-        	$IPT -t filter -A INPUT -i $int_all -j ACCEPT
-        done    
+    for int_all in ${all} ; do
+      ${IPT} -t filter -A INPUT -i ${int_all} -j ACCEPT
+    done
 
-        OLDIFS=$IFS
+    OLDIFS=$IFS
 
-        for int_t in $tcpint ; do
-        	IFS="+" 
-        	set -- $int_t
+    for int_t in ${tcpint} ; do
+      IFS="+"
+      set -- ${int_t}
 
-        	int_t=$1
-        	shift
-        	nport=$#
-        	i=0;
-        	while (( $i < $nport )) ; do
-                	$IPT -t filter -A INPUT -i $int_t -p TCP --dport $1 -j ACCEPT
-			shift
-        		i=$[$i+1]
-        	done
-        done
+      int_t=${1}
+      shift
+      nport=$#
+      i=0;
+      while (( ${i} < ${nport} )) ; do
+        ${IPT} -t filter -A INPUT -i ${int_t} -p TCP --dport ${1} -j ACCEPT
+        shift
+        i=$[$i+1]
+      done
+    done
 
-        IFS=$OLDIFS
+    IFS=$OLDIFS
 
-        for int_u in $udpint ; do
-        	IFS="+" 
-        	set -- $int_u
+    for int_u in $udpint ; do
+      IFS="+"
+      set -- $int_u
 
-        	int_u=$1
-        	shift
-        	nport=$#
-        	i=0;
-        	while (( $i < $nport )) ; do
-                	$IPT -t filter -A INPUT -i $int_u -p UDP --dport $1 -j ACCEPT
-			shift
-                	i=$[$i+1]
-            	done
-        done
+      int_u=$1
+      shift
+      nport=$#
+      i=0;
+      while (( ${i} < ${nport} )) ; do
+        ${IPT} -t filter -A INPUT -i ${int_u} -p UDP --dport ${1} -j ACCEPT
+        shift
+        i=$[$i+1]
+      done
+    done
 
-        $IPT -t filter -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    ${IPT} -t filter -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-        [[ $gateway == "True" ]] && { 
-        	$IPT -t nat -A POSTROUTING -o $extif -j MASQUERADE
-        	$IPT -A FORWARD -i $intif -o $extif -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
-        	$IPT -A FORWARD -o $intif -i $extif -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-        	echo 1 > /proc/sys/net/ipv4/conf/all/forwarding
-        }
+    [[ $gateway == "True" ]] && {
+      ${IPT} -t nat -A POSTROUTING -o ${extif} -j MASQUERADE
+      ${IPT} -A FORWARD -i ${intif} -o ${extif} -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+      ${IPT} -A FORWARD -o ${intif} -i ${extif} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+      echo 1 > /proc/sys/net/ipv4/conf/all/forwarding
+    }
 
-        [[ $logdrop == "True" ]] && {
-        	$IPT -t filter -A INPUT -j LOG --log-prefix "[DROP] " 
-        }
+    [[ $logdrop == "True" ]] && {
+      ${IPT} -t filter -A INPUT -j LOG --log-prefix "[DROP] "
+    }
 
-        IFS=$OLDIFS
+    IFS=$OLDIFS
 
-	# REJECT
-        $IPT -A INPUT -p tcp -j REJECT --reject-with tcp-reset # we prefer REJECT instead of DROP
-        $IPT -A INPUT -j REJECT # we prefer REJECT instead of DROP
-        # on fait tout ca à la fin pour eviter de bloquer le script(et le reseau)
-        # en cas d'affichage (ssh)
-        $IPT -P INPUT DROP
-        $IPT -P OUTPUT ACCEPT
-        $IPT -P FORWARD ACCEPT
-;;
+    # REJECT
+    ${IPT} -A INPUT -p tcp -j REJECT --reject-with tcp-reset # we prefer REJECT instead of DROP
+    ${IPT} -A INPUT -j REJECT # we prefer REJECT instead of DROP
+    # on fait tout ca à la fin pour eviter de bloquer le script(et le reseau)
+    # en cas d'affichage (ssh)
+    ${IPT} -P INPUT DROP
+    ${IPT} -P OUTPUT ACCEPT
+    ${IPT} -P FORWARD ACCEPT
+  ;;
 
-stop)
-	flush
-;;
+  stop)
+    flush
+  ;;
 
-restart)
-       	$0 start
-;;
+  restart)
+    $0 start
+  ;;
 
-*)
-      	echo "Usage: $0 [start|restart|stop]" 
-;;
+  *)
+    echo "Usage: $0 [start|restart|stop]"
+  ;;
 esac
-

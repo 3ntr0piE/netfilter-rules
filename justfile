@@ -1,5 +1,8 @@
 #!/usr/bin/env -S just --justfile
 
+git_bin := require("git")
+git_cliff_bin := require("git-cliff")
+
 # Just list recipes
 default:
     @just --list

@@ -18,3 +18,9 @@ upgrade:
     chmod +x /usr/local/bin/netfilter-rules
     cp ./net6filter-rules /usr/local/bin
     chmod +x /usr/local/bin/net6filter-rules
+
+# Generate the next release with tag
+gen-rel tag:
+    {{ git_cliff_bin }} --unreleased --tag {{ tag }} -o
+    {{ git_bin }} commit -a -s -S -m "chore(release): prepare for {{ tag }}"
+    {{ git_bin }} tag -s {{ tag }} -m "{{ tag }}"

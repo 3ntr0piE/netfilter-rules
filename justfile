@@ -22,8 +22,20 @@ upgrade:
     cp ./net6filter-rules /usr/local/bin
     chmod +x /usr/local/bin/net6filter-rules
 
+# Auto generate the next release
+auto-gen-rel:
+    #!/usr/bin/env sh
+    _TAG=$({{ git_cliff_bin }} --bumped-version)
+    {{ git_cliff_bin }} --unreleased --tag ${_TAG} -o
+    {{ git_bin }} commit -a -s -S -m "chore(release): prepare for ${_TAG}"
+    {{ git_bin }} tag -s ${_TAG} -m "${_TAG}"
+
 # Generate the next release with tag
 gen-rel tag:
     {{ git_cliff_bin }} --unreleased --tag {{ tag }} -o
     {{ git_bin }} commit -a -s -S -m "chore(release): prepare for {{ tag }}"
     {{ git_bin }} tag -s {{ tag }} -m "{{ tag }}"
+
+# Generate the next tag
+gen-tag:
+    @{{ git_cliff_bin }} --bumped-version

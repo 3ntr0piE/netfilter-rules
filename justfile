@@ -12,7 +12,7 @@ install:
     cp ./netfilter-rules.conf /etc
     cp ./net6filter-rules.conf /etc
     cp ./netfilter-rules /usr/local/bin
-    cp ./net6filter-rules /usr/local/bin
+    ln -srf /usr/local/bin/netfilter-rules /usr/local/bin/netfilter-rules-nft
 
 # Run upgrade
 upgrade:

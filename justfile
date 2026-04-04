@@ -9,7 +9,6 @@ default:
 
 # Run install
 install:
-    mkdir -p /etc/netfilter-rules.d /etc/net6filter-rules.d
     cp ./netfilter-rules.conf /etc
     cp ./net6filter-rules.conf /etc
     cp ./netfilter-rules /usr/local/bin
@@ -19,8 +18,6 @@ install:
 upgrade:
     cp ./netfilter-rules /usr/local/bin
     chmod +x /usr/local/bin/netfilter-rules
-    cp ./net6filter-rules /usr/local/bin
-    chmod +x /usr/local/bin/net6filter-rules
 
 # Auto generate the next release
 auto-gen-rel:

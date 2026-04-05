@@ -53,8 +53,8 @@ flush() {
   ${iptables_bin} -F PREROUTING -t mangle
   ${iptables_bin} -F POSTROUTING -t nat
   ${iptables_bin} -F POSTROUTING -t mangle
-  ${iptables_bin} -F LOGDENY -t filter > /dev/null 2>&1
-  ${iptables_bin} -X LOGDENY -t filter > /dev/null 2>&1
+  ${iptables_bin} -F LOGDENY -t filter > /dev/null 2>&1 || true
+  ${iptables_bin} -X LOGDENY -t filter > /dev/null 2>&1 || true
 }
 
 create_log_rule() {

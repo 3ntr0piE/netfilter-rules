@@ -173,12 +173,8 @@ main() {
       loop_int_dport "${1}" "udpint"
       set_conntrack "${1}"
       apply_extra_rules
-      [[ ${gateway} == "True" ]] && {
-        set_gateway "${1}"
-      }
-      [[ ${logdeny} == "True" ]] && {
-        create_log_rule
-      }
+      [[ "${gateway}" == "True" ]] && set_gateway "${1}"
+      [[ "${logdeny}" == "True" ]] && create_log_rule
       default_deny "${1}"
     ;;
     flush)

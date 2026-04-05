@@ -119,12 +119,6 @@ set_gateway() {
   echo 1 > /proc/sys/net/${1}/conf/all/forwarding
 }
 
-set_log() {
-  local log_prefix
-  log_prefix="${deny_action}"
-  ${iptables_bin} -t filter -A INPUT -j LOG --log-prefix "[${log_prefix}] "
-}
-
 default_deny() {
   if [ "${deny_action}" == "REJECT" ] ; then
     ${iptables_bin} -A INPUT -p TCP -j "${deny_action}" --reject-with tcp-reset
@@ -183,7 +177,6 @@ main() {
       }
       [[ ${logdeny} == "True" ]] && {
         create_log_rule
-        set_log
       }
       default_deny "${1}"
     ;;

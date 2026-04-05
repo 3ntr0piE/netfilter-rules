@@ -100,7 +100,6 @@ loop_int_dport() {
     ;;
   esac
   OLDIFS=$IFS
-  local int
   for int in ${proto_int} ; do
     IFS="+"
     set -- ${int}

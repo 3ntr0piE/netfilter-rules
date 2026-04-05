@@ -124,7 +124,7 @@ default_deny() {
     ${iptables_bin} -A INPUT -p TCP -j "${deny_action}" --reject-with tcp-reset
     if [ "${1}" == "ipv6" ] ; then
       ${iptables_bin} -A INPUT -p UDP -j "${deny_action}" --reject-with icmp6-port-unreachable
-      ${iptables_bin} -A INPUT -p ICMPv6 -j "${deny_action}" --reject-with icmp6-adm-prohibited
+      ${iptables_bin} -A INPUT -p ipv6-icmp -j "${deny_action}" --reject-with icmp6-adm-prohibited
     else
       ${iptables_bin} -A INPUT -p UDP -j "${deny_action}" --reject-with icmp-port-unreachable
     fi

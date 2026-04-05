@@ -12,7 +12,7 @@ usage() {
 }
 
 check_user_is_root() {
-	if [ $(id -u) -ne 0 ] ; then
+  if [ "$(id -u)" -ne 0 ] ; then
     die "!Please run as root or using doas/sudo!"
   fi
 }

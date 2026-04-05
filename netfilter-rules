@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+set -o pipefail # trace ERR through pipes
+set -o errtrace # trace ERR through 'time command' and other functions
+
+nf_conf_dir="/etc/netfilter-rules"
+
 die() {
   echo -e "${1}"
   exit 1
@@ -18,6 +23,11 @@ check_user_is_root() {
 }
 
 source_conf_file() {
+  local nf_conf
+  nf_conf="${nf_conf_dir}"/"${1}".conf
+  [ ! -d "${nf_conf_dir}" ] && {
+    die "${nf_conf_dir} directory missing"
+  }
   [ ! -f "${nf_conf}" ] && {
     die "${nf_conf} missing"
   }
@@ -148,7 +158,6 @@ main() {
       else
         iptables_bin="$(command -v iptables)"
       fi
-      nf_conf="/etc/netfilter-rules.conf"
     ;;
     ipv6)
       if [ "$(basename ${0})" == "netfilter-rules-nft" ] ; then
@@ -156,7 +165,6 @@ main() {
       else
         iptables_bin="$(command -v ip6tables)"
       fi
-      nf_conf="/etc/net6filter-rules.conf"
     ;;
     *)
       usage
@@ -164,7 +172,7 @@ main() {
   esac
   case "${2}" in
     apply)
-      source_conf_file
+      source_conf_file "${1}"
       flush
       set_conntrack "${1}"
       loop_icmp "${1}"
@@ -178,7 +186,7 @@ main() {
       default_deny "${1}"
     ;;
     flush)
-      source_conf_file
+      source_conf_file "${1}"
       flush
     ;;
     *)

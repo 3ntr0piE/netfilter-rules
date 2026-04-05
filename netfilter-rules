@@ -5,15 +5,24 @@ set -o errtrace # trace ERR through 'time command' and other functions
 set -o errexit # exit the script if any statement returns a non-true return value
 
 nf_conf_dir="/etc/netfilter-rules"
+dry_run=false
 
 die() {
   echo -e "${1}"
   exit 1
 }
 
+run() {
+  if "${dry_run}" ; then
+    ( IFS=' '; echo "[dry-run] $*" )
+  else
+    "$@"
+  fi
+}
+
 usage() {
-  echo -e "ex.: ${0} ipv(4|6) apply"
-  echo -e "ex.: ${0} ipv(4|6) flush"
+  echo -e "ex.: ${0} ipv(4|6) apply [--dry-run]"
+  echo -e "ex.: ${0} ipv(4|6) flush [--dry-run]"
   exit 1
 }
 
@@ -38,30 +47,30 @@ source_conf_file() {
 apply_extra_rules() {
   local extra_rule
   for extra_rule in "${extra_rules[@]}" ; do
-    ${iptables_bin} ${extra_rule}
+    run ${iptables_bin} ${extra_rule}
   done
 }
 
 flush() {
-  ${iptables_bin} -P INPUT ACCEPT
-  ${iptables_bin} -P OUTPUT ACCEPT
-  ${iptables_bin} -P FORWARD ACCEPT
-  ${iptables_bin} -F INPUT
-  ${iptables_bin} -F OUTPUT
-  ${iptables_bin} -F FORWARD
-  ${iptables_bin} -F PREROUTING -t nat
-  ${iptables_bin} -F PREROUTING -t mangle
-  ${iptables_bin} -F POSTROUTING -t nat
-  ${iptables_bin} -F POSTROUTING -t mangle
-  ${iptables_bin} -F LOGDENY -t filter > /dev/null 2>&1 || true
-  ${iptables_bin} -X LOGDENY -t filter > /dev/null 2>&1 || true
+  run ${iptables_bin} -P INPUT ACCEPT
+  run ${iptables_bin} -P OUTPUT ACCEPT
+  run ${iptables_bin} -P FORWARD ACCEPT
+  run ${iptables_bin} -F INPUT
+  run ${iptables_bin} -F OUTPUT
+  run ${iptables_bin} -F FORWARD
+  run ${iptables_bin} -F PREROUTING -t nat
+  run ${iptables_bin} -F PREROUTING -t mangle
+  run ${iptables_bin} -F POSTROUTING -t nat
+  run ${iptables_bin} -F POSTROUTING -t mangle
+  run ${iptables_bin} -F LOGDENY -t filter 2>/dev/null || true
+  run ${iptables_bin} -X LOGDENY -t filter 2>/dev/null || true
 }
 
 create_log_rule() {
-  ${iptables_bin} -N LOGDENY
-  ${iptables_bin} -t filter -A LOGDENY -j LOG --log-prefix "[${deny_action}] "
-  ${iptables_bin} -t filter -A LOGDENY -j "${deny_action}"
-  ${iptables_bin} -t filter -A INPUT -j LOGDENY
+  run ${iptables_bin} -N LOGDENY
+  run ${iptables_bin} -t filter -A LOGDENY -j LOG --log-prefix "[${deny_action}] "
+  run ${iptables_bin} -t filter -A LOGDENY -j "${deny_action}"
+  run ${iptables_bin} -t filter -A INPUT -j LOGDENY
 }
 
 loop_icmp() {
@@ -71,21 +80,21 @@ loop_icmp() {
     icmp="${1}-${icmp}"
   fi
   for int in ${ping} ; do
-    ${iptables_bin} -A INPUT -p ${icmp} -i ${int} -j ACCEPT
+    run ${iptables_bin} -A INPUT -p ${icmp} -i ${int} -j ACCEPT
   done
 }
 
 loop_except() {
   local except
   for except in ${exceptions} ; do
-    ${iptables_bin} -t filter -A INPUT -s ${except} -j ACCEPT
+    run ${iptables_bin} -t filter -A INPUT -s ${except} -j ACCEPT
   done
 }
 
 loop_int_all() {
   local int_all
   for int_all in ${all} ; do
-    ${iptables_bin} -t filter -A INPUT -i ${int_all} -j ACCEPT
+    run ${iptables_bin} -t filter -A INPUT -i ${int_all} -j ACCEPT
   done
 }
 
@@ -109,7 +118,7 @@ loop_int_dport() {
     nport=$#
     i=0;
     while (( ${i} < ${nport} )) ; do
-      ${iptables_bin} -t filter -A INPUT -i ${int} -p ${proto} --dport ${1} -j ACCEPT
+      run ${iptables_bin} -t filter -A INPUT -i ${int} -p ${proto} --dport ${1} -j ACCEPT
       shift
       i=$(( i + 1 ))
     done
@@ -118,39 +127,40 @@ loop_int_dport() {
 }
 
 set_conntrack() {
-  ${iptables_bin} -t filter -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+  run ${iptables_bin} -t filter -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 }
 
 set_gateway() {
   if [ "${1}" == "ipv4" ] || [ "${masquerade}" == "True" ] ; then
-    ${iptables_bin} -t nat -A POSTROUTING -o ${extif} -j MASQUERADE
+    run ${iptables_bin} -t nat -A POSTROUTING -o ${extif} -j MASQUERADE
   fi
-  ${iptables_bin} -A FORWARD -i ${intif} -o ${extif} -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
-  ${iptables_bin} -A FORWARD -o ${intif} -i ${extif} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
-  echo 1 > /proc/sys/net/${1}/conf/all/forwarding
+  run ${iptables_bin} -A FORWARD -i ${intif} -o ${extif} -m conntrack --ctstate NEW,ESTABLISHED,RELATED -j ACCEPT
+  run ${iptables_bin} -A FORWARD -o ${intif} -i ${extif} -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+  "${dry_run}" || echo 1 > /proc/sys/net/${1}/conf/all/forwarding
 }
 
 default_deny() {
   if [ "${deny_action}" == "REJECT" ] ; then
-    ${iptables_bin} -A INPUT -p TCP -j "${deny_action}" --reject-with tcp-reset
+    run ${iptables_bin} -A INPUT -p TCP -j "${deny_action}" --reject-with tcp-reset
     if [ "${1}" == "ipv6" ] ; then
-      ${iptables_bin} -A INPUT -p UDP -j "${deny_action}" --reject-with icmp6-port-unreachable
-      ${iptables_bin} -A INPUT -p ipv6-icmp -j "${deny_action}" --reject-with icmp6-adm-prohibited
+      run ${iptables_bin} -A INPUT -p UDP -j "${deny_action}" --reject-with icmp6-port-unreachable
+      run ${iptables_bin} -A INPUT -p ipv6-icmp -j "${deny_action}" --reject-with icmp6-adm-prohibited
     else
-      ${iptables_bin} -A INPUT -p UDP -j "${deny_action}" --reject-with icmp-port-unreachable
+      run ${iptables_bin} -A INPUT -p UDP -j "${deny_action}" --reject-with icmp-port-unreachable
     fi
-    ${iptables_bin} -A INPUT -j "${deny_action}"
+    run ${iptables_bin} -A INPUT -j "${deny_action}"
   else
-    ${iptables_bin} -A INPUT -j "${deny_action}"
+    run ${iptables_bin} -A INPUT -j "${deny_action}"
   fi
   # To avoid the network break
-  ${iptables_bin} -P INPUT DROP
-  ${iptables_bin} -P OUTPUT ACCEPT
-  ${iptables_bin} -P FORWARD ACCEPT
+  run ${iptables_bin} -P INPUT DROP
+  run ${iptables_bin} -P OUTPUT ACCEPT
+  run ${iptables_bin} -P FORWARD ACCEPT
 }
 
 main() {
   check_user_is_root
+  [[ "${3:-}" == "--dry-run" ]] && dry_run=true
   case "${1}" in
     ipv4)
       if [ "$(basename ${0})" == "netfilter-rules-nft" ] ; then

@@ -50,6 +50,7 @@ create_log_rule() {
   ${iptables_bin} -N LOGDENY
   ${iptables_bin} -t filter -A LOGDENY -j LOG --log-prefix "[${deny_action}] "
   ${iptables_bin} -t filter -A LOGDENY -j "${deny_action}"
+  ${iptables_bin} -t filter -A INPUT -j LOGDENY
 }
 
 loop_icmp() {

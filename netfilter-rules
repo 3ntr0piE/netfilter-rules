@@ -8,7 +8,7 @@ die() {
 usage() {
   echo -e "ex.: ${0} ipv(4|6) apply"
   echo -e "ex.: ${0} ipv(4|6) flush"
-  exit
+  exit 1
 }
 
 check_user_is_root() {

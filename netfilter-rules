@@ -100,7 +100,7 @@ loop_int_dport() {
     while (( ${i} < ${nport} )) ; do
       ${iptables_bin} -t filter -A INPUT -i ${int} -p ${proto} --dport ${1} -j ACCEPT
       shift
-      i=$[$i+1]
+      i=$(( i + 1 ))
     done
   done
   IFS=$OLDIFS

@@ -165,13 +165,13 @@ main() {
     apply)
       source_conf_file
       flush
+      set_conntrack "${1}"
       apply_extra_rules
       loop_icmp "${1}"
       loop_except
       loop_int_all
       loop_int_dport "${1}" "tcpint"
       loop_int_dport "${1}" "udpint"
-      set_conntrack "${1}"
       [[ ${gateway} == "True" ]] && {
         set_gateway "${1}"
       }

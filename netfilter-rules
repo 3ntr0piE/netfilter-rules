@@ -54,9 +54,9 @@ create_log_rule() {
 
 loop_icmp() {
   local icmp int
-  icmp="ICMP"
+  icmp="icmp"
   if [ "${1}" == "ipv6" ] ; then
-    icmp="${icmp}v6"
+    icmp="${1}-${icmp}"
   fi
   for int in ${ping} ; do
     ${iptables_bin} -A INPUT -p ${icmp} -i ${int} -j ACCEPT

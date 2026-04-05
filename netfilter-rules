@@ -8,6 +8,16 @@ nf_conf_dir="/etc/netfilter-rules"
 dry_run=false
 verbose=false
 
+if [ -t 1 ] ; then
+  col_yellow='\033[0;33m'
+  col_cyan='\033[0;36m'
+  col_reset='\033[0m'
+else
+  col_yellow=''
+  col_cyan=''
+  col_reset=''
+fi
+
 die() {
   echo -e "${1}"
   exit 1
@@ -15,11 +25,11 @@ die() {
 
 run() {
   if "${dry_run}" ; then
-    ( IFS=' '; echo "[dry-run] $*" )
+    ( IFS=' '; echo -e "${col_yellow}[dry-run]${col_reset} $*" )
   else
     if "${verbose}" ; then
-      ( IFS=' '; echo "[verbose] $*" )
-      "$@" | sed 's/^/[verbose] /'
+      ( IFS=' '; echo -e "${col_cyan}[verbose]${col_reset} $*" )
+      "$@" | sed "s/^/$(printf "${col_cyan}[verbose]${col_reset} ")/"
     else
       "$@"
     fi

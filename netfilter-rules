@@ -6,6 +6,7 @@ set -o errexit # exit the script if any statement returns a non-true return valu
 
 nf_conf_dir="/etc/netfilter-rules"
 dry_run=false
+verbose=false
 
 die() {
   echo -e "${1}"
@@ -16,13 +17,19 @@ run() {
   if "${dry_run}" ; then
     ( IFS=' '; echo "[dry-run] $*" )
   else
-    "$@"
+    if "${verbose}" ; then
+      ( IFS=' '; echo "[verbose] $*" )
+      "$@" | sed 's/^/[verbose] /'
+    else
+      "$@"
+    fi
   fi
 }
 
 usage() {
-  echo -e "ex.: ${0} ipv(4|6) apply [--dry-run]"
-  echo -e "ex.: ${0} ipv(4|6) flush [--dry-run]"
+  echo -e "ex.: ${0} ipv(4|6) apply [--dry-run] [--verbose]"
+  echo -e "ex.: ${0} ipv(4|6) flush [--dry-run] [--verbose]"
+  echo -e "ex.: ${0} ipv(4|6) status"
   exit 1
 }
 
@@ -126,6 +133,9 @@ loop_int_dport() {
   IFS=$OLDIFS
 }
 
+status() {
+  ${iptables_bin} -L -n -v --line-numbers
+}
 set_conntrack() {
   run ${iptables_bin} -t filter -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 }
@@ -161,6 +171,7 @@ default_deny() {
 main() {
   check_user_is_root
   [[ "${3:-}" == "--dry-run" ]] && dry_run=true
+  [[ "${3:-}" == "--verbose" ]] && verbose=true
   case "${1}" in
     ipv4)
       if [ "$(basename ${0})" == "netfilter-rules-nft" ] ; then
@@ -194,6 +205,9 @@ main() {
       [[ "${gateway}" == "True" ]] && set_gateway "${1}"
       [[ "${logdeny}" == "True" ]] && create_log_rule
       default_deny "${1}"
+    ;;
+    status)
+      status
     ;;
     flush)
       source_conf_file "${1}"

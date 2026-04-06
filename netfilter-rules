@@ -172,10 +172,6 @@ default_deny() {
   else
     run ${iptables_bin} -A INPUT -j "${deny_action}"
   fi
-  # To avoid the network break
-  run ${iptables_bin} -P INPUT DROP
-  run ${iptables_bin} -P OUTPUT ACCEPT
-  run ${iptables_bin} -P FORWARD ACCEPT
 }
 
 main() {

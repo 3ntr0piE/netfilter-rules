@@ -1,4 +1,14 @@
 
+## [4.2.2] - 2026-10-04
+
+### 🐛 Bug Fixes
+
+- **(just)** ([f582c1c](https://github.com/3ntr0piE/netfilter-rules/commit/f582c1cf14c8cb412fd386477420cf90cea496d2)) - [netfilter-rules] move require to release recipes - ([babykart](https://github.com/babykart))
+
+### 📚 Documentation
+
+- **(ai)** ([6331073](https://github.com/3ntr0piE/netfilter-rules/commit/6331073725474fef2e81bdf5f3152ec56571b73d)) - [netfilter-rules] add AGENTS.md - ([babykart](https://github.com/babykart))
+
 ## [4.2.1] - 2026-04-06
 
 ### 🐛 Bug Fixes
